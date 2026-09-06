@@ -30,7 +30,7 @@
 1. 打开 [console.unikraft.cloud](https://console.unikraft.cloud) 注册 / 登录
 2. 进入 **API Tokens**（或 Settings → Tokens）页面
 3. **生成一个新的 API Token**（复制保存，只显示一次）
-4. 记下你的**组织名（Organization）**—— 通常是你注册的用户名，形如 `sk684437`
+
 
 ### 2. 配置 GitHub Actions Secrets
 
