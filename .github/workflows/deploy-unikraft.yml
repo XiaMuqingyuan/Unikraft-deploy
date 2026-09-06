@@ -1,0 +1,151 @@
+name: Deploy to Unikraft Cloud
+
+on:
+  workflow_dispatch:
+    inputs:
+      metro:
+        description: 部署区域 (metro)。完整列表可先本地运行 `unikraft metros` 查看。
+        required: true
+        type: choice
+        default: fra
+        options:
+          - fra
+          - sin
+          - sfo
+          - dal
+          - was
+      image_tag:
+        description: 镜像 tag（会发布为 <org>/unikraft:<tag>）
+        required: false
+        type: string
+        default: latest
+      publish:
+        description: 对外映射，格式 <对外端口>:<容器端口>/<协议>，如 443:3000/http+tls
+        required: false
+        type: string
+        default: 443:3000/http+tls
+      env_vars:
+        description: 附加环境变量，每行一个 KEY=VALUE（放非敏感值；敏感值请在下方部署步骤中引用 secrets）
+        required: false
+        type: string
+      instance_name:
+        description: 实例名称
+        required: false
+        type: string
+        default: nodejs
+      memory:
+        description: 内存大小，如 512MiB / 1GiB
+        required: false
+        type: string
+        default: 512MiB
+      vcpus:
+        description: vCPU 数量
+        required: false
+        type: string
+        default: 1
+
+jobs:
+  deploy:
+    name: Build & Deploy unikernel
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Unikraft CLI
+        uses: unikraft/setup-action@v1
+
+      - name: Login to Unikraft Cloud (UNIKRAFT_TOKEN)
+        env:
+          UNIKRAFT_TOKEN: ${{ secrets.UNIKRAFT_TOKEN }}
+        run: |
+          printf '%s' "$UNIKRAFT_TOKEN" > "$RUNNER_TEMP/uk.token"
+          unikraft login --token "$RUNNER_TEMP/uk.token"
+          rm -f "$RUNNER_TEMP/uk.token"
+
+      - name: Resolve organization name
+        id: org
+        run: |
+          CONFIG="$HOME/.config/unikraft/config.yaml"
+          if [ ! -f "$CONFIG" ]; then
+            echo "::error::config not found at $CONFIG (did the login step run?)"
+            exit 1
+          fi
+
+          PROFILE="$(sed -n 's/^profile:[[:space:]]*//p' "$CONFIG" | head -n1)"
+          PROFILE="${PROFILE:-default}"
+
+          # 优先取当前 profile 下的 organization
+          ORG="$(awk -v p="$PROFILE" '
+            $0 ~ "^profiles:" { inp=1; next }
+            inp && $0 ~ "^[[:space:]]*" p ":" { inprofile=1; next }
+            inp && inprofile && $0 ~ "^[[:space:]]*organization:" {
+              sub(/^[[:space:]]*organization:[[:space:]]*/, ""); print; exit
+            }
+          ' "$CONFIG")"
+
+          # 回退到顶层 organization
+          if [ -z "$ORG" ]; then
+            ORG="$(sed -n 's/^[[:space:]]*organization:[[:space:]]*//p' "$CONFIG" | head -n1)"
+          fi
+
+          if [ -z "$ORG" ]; then
+            echo "::error::could not resolve organization from $CONFIG"
+            exit 1
+          fi
+
+          echo "Resolved organization: $ORG"
+          echo "name=$ORG" >> "$GITHUB_OUTPUT"
+
+      - name: Build and publish image <org>/unikraft:latest
+        run: |
+          unikraft build . --output "${{ steps.org.outputs.name }}/unikraft:${{ inputs.image_tag }}"
+
+      - name: Deploy instance
+        env:
+          ORG: ${{ steps.org.outputs.name }}
+          METRO: ${{ inputs.metro }}
+          INSTANCE: ${{ inputs.instance_name }}
+          PUBLISH: ${{ inputs.publish }}
+          ENV_INPUT: ${{ inputs.env_vars }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          MEMORY: ${{ inputs.memory }}
+          VCPUS: ${{ inputs.vcpus }}
+        run: |
+          set -euo pipefail
+          IMAGE="$ORG/unikraft:$IMAGE_TAG"
+
+          # 收集 -e 参数（兼容换行 / 逗号 / 分号分隔）
+          env_args=()
+          if [ -n "$ENV_INPUT" ]; then
+            mapfile -t env_lines < <(printf '%s\n' "$ENV_INPUT" | tr ',;' '\n')
+            for line in "${env_lines[@]}"; do
+              line="${line%$'\r'}"
+              line="$(printf '%s' "$line" | xargs)"
+              [ -n "$line" ] && env_args+=(-e "$line")
+            done
+          fi
+
+          # 检查实例是否已存在：存在则 edit 更新，不存在则 run 创建
+          if unikraft instances get "$INSTANCE" --metro "$METRO" >/dev/null 2>&1; then
+            echo "Instance '$INSTANCE' exists — updating via edit"
+            edit_args=(instances edit "$INSTANCE" --metro "$METRO" --image "$IMAGE")
+            [ -n "$MEMORY" ] && edit_args+=(-m "$MEMORY")
+            [ -n "$VCPUS" ] && edit_args+=(--vcpus "$VCPUS")
+            [ -n "$PUBLISH" ] && edit_args+=(-p "$PUBLISH")
+            edit_args+=("${env_args[@]}")
+            unikraft "${edit_args[@]}"
+          else
+            echo "Instance '$INSTANCE' does not exist — creating via run"
+            run_args=(run --metro "$METRO" --name "$INSTANCE")
+            [ -n "$PUBLISH" ] && run_args+=(-p "$PUBLISH")
+            [ -n "$MEMORY" ] && run_args+=(-m "$MEMORY")
+            [ -n "$VCPUS" ] && run_args+=(--vcpus "$VCPUS")
+            run_args+=("${env_args[@]}")
+            run_args+=(--image "$IMAGE")
+            unikraft "${run_args[@]}"
+          fi

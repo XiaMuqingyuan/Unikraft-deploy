@@ -1,0 +1,57 @@
+name: Delete Unikraft Instance
+
+on:
+  workflow_dispatch:
+    inputs:
+      metro:
+        description: 实例所在区域 (metro)
+        required: true
+        type: choice
+        default: fra
+        options:
+          - fra
+          - sin
+          - sfo
+          - dal
+          - was
+      instance_name:
+        description: 要删除的实例名称（留空则列出当前所有实例）
+        required: false
+        type: string
+        default: nodejs
+
+jobs:
+  delete:
+    name: Delete instance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Unikraft CLI
+        uses: unikraft/setup-action@v1
+
+      - name: Login to Unikraft Cloud (UNIKRAFT_TOKEN)
+        env:
+          UNIKRAFT_TOKEN: ${{ secrets.UNIKRAFT_TOKEN }}
+        run: |
+          printf '%s' "$UNIKRAFT_TOKEN" > "$RUNNER_TEMP/uk.token"
+          unikraft login --token "$RUNNER_TEMP/uk.token"
+          rm -f "$RUNNER_TEMP/uk.token"
+
+      - name: List current instances
+        run: |
+          unikraft instances list --metro "${{ inputs.metro }}"
+
+      - name: Delete instance
+        env:
+          METRO: ${{ inputs.metro }}
+          INSTANCE: ${{ inputs.instance_name }}
+        run: |
+          set -euo pipefail
+          # 删除指定实例（按 区域/名称 定位，避免跨区域误删）
+          unikraft instance delete "$METRO/$INSTANCE"

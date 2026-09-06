@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>樱花季 - Sakura</title>
+    <style>
+      /* --- 基础页面样式 --- */
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* 防止出现滚动条 */
+        background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+        font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      /* --- 中间文字样式 --- */
+      .content {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #7a7a7a;
+        z-index: 10;
+        pointer-events: none; /* 让鼠标透过文字，不影响观感 */
+      }
+
+      .content h1 {
+        font-size: 3rem;
+        font-weight: 300;
+        letter-spacing: 10px;
+        margin-bottom: 10px;
+        color: #ff9a9e;
+        text-shadow: 2px 2px 4px rgba(255, 154, 158, 0.2);
+        opacity: 0;
+        animation: fadeIn 3s ease-in-out forwards;
+      }
+
+      .content p {
+        font-size: 1rem;
+        color: #a18cd1;
+        letter-spacing: 5px;
+        opacity: 0;
+        animation: fadeIn 3s ease-in-out 1.5s forwards;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* --- 右上角友链样式 (新增部分) --- */
+      .friend-links {
+        position: absolute;
+        top: 30px;
+        right: 40px;
+        z-index: 100; /* 确保在最上层，可以点击 */
+        display: flex;
+        gap: 25px; /* 链接之间的间距 */
+      }
+
+      .friend-links a {
+        text-decoration: none;
+        color: #8c8c8c;
+        font-size: 0.9rem;
+        font-weight: 300;
+        position: relative;
+        transition: color 0.3s ease;
+      }
+
+      /* 悬停变色 */
+      .friend-links a:hover {
+        color: #ff9a9e; /* 变成樱花粉 */
+      }
+
+      /* 链接底部的动态线条效果 */
+      .friend-links a::after {
+        content: "";
+        position: absolute;
+        width: 0;
+        height: 1px;
+        bottom: -4px;
+        left: 50%;
+        background-color: #ff9a9e;
+        transition: all 0.3s ease;
+        transform: translateX(-50%);
+      }
+
+      .friend-links a:hover::after {
+        width: 100%;
+      }
+
+      /* --- 樱花花瓣样式 --- */
+      .petal {
+        position: absolute;
+        background-color: #ffc0cb;
+        border-radius: 150% 0 150% 0;
+        animation: animate-petal linear infinite;
+        top: -10%;
+        opacity: 0.8;
+        box-shadow: 0 0 5px rgba(255, 182, 193, 0.5);
+        z-index: 1;
+      }
+
+      .petal::after {
+        content: "";
+        position: absolute;
+        top: -10%;
+        left: -10%;
+        width: 100%;
+        height: 100%;
+        border-radius: 150% 0 150% 0;
+        background-color: rgba(255, 255, 255, 0.3);
+      }
+
+      /* --- 飘落动画 --- */
+      @keyframes animate-petal {
+        0% {
+          top: -10%;
+          transform: translateX(0) rotate(0deg);
+          opacity: 1;
+        }
+        100% {
+          top: 110%;
+          transform: translateX(100px) rotate(360deg);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 右上角友链区 -->
+    <div class="friend-links">
+      <a href="https://blog.525553.xyz" target="_blank">我的博客</a>
+      <a href="https://github.com/XiaMuqingyuan" target="_blank">GitHub</a>
+      <a href="https://t.me/MoWuXin" target="_blank">联系我</a>
+    </div>
+
+    <!-- 页面中心文字 -->
+    <div class="content">
+      <h1>爱你哟</h1>
+      <p>樱花坠落秒速五厘米</p>
+    </div>
+
+    <!-- 脚本逻辑 -->
+    <script>
+      function createPetal() {
+        const petal = document.createElement("div");
+        petal.classList.add("petal");
+
+        const size = Math.random() * 15 + 10;
+        petal.style.width = `${size}px`;
+        petal.style.height = `${size}px`;
+
+        petal.style.left = Math.random() * 100 + "vw";
+
+        const duration = Math.random() * 7 + 5;
+        petal.style.animationDuration = `${duration}s`;
+
+        const colors = ["#ffc0cb", "#ffb7b2", "#ffe4e1", "#f8c8dc"];
+        petal.style.backgroundColor =
+          colors[Math.floor(Math.random() * colors.length)];
+
+        document.body.appendChild(petal);
+
+        setTimeout(() => {
+          petal.remove();
+        }, duration * 1000);
+      }
+
+      setInterval(createPetal, 300);
+
+      for (let i = 0; i < 10; i++) {
+        setTimeout(createPetal, i * 200);
+      }
+    </script>
+  </body>
+</html>

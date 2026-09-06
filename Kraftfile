@@ -1,0 +1,7 @@
+spec: v0.7
+name: nodejs
+runtime: base-compat:latest
+rootfs:
+  format: erofs
+  source: ./Dockerfile
+cmd: ["node", "/tmp/index.js"]
