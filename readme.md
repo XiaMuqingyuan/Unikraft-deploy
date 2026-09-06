@@ -23,32 +23,6 @@
 
 ---
 
-## 📋 环境变量
-
-| 变量名       | 是否必须 | 默认值                               | 说明                                                    |
-| ------------ | -------- | ------------------------------------ | ------------------------------------------------------- |
-| UPLOAD_URL   | 否       | -                                    | 订阅上传地址                                            |
-| PROJECT_URL  | 否       | https://www.google.com               | 项目分配的域名                                          |
-| AUTO_ACCESS  | 否       | false                                | 是否开启自动访问保活                                    |
-| PORT         | 否       | 3000                                 | HTTP 服务监听端口                                       |
-| ARGO_PORT    | 否       | 8001                                 | Argo 隧道端口                                           |
-| UUID         | 否       | 9afd1229-b893-40c1-84dd-51e7ce204913 | 节点 UUID                                               |
-| NEZHA_SERVER | 否       | -                                    | 哪吒面板域名                                            |
-| NEZHA_PORT   | 否       | -                                    | 哪吒端口（443/8443/2096/2087/2083/2053 时自动启用 TLS） |
-| NEZHA_KEY    | 否       | -                                    | 哪吒密钥                                                |
-| ARGO_DOMAIN  | 否       | -                                    | Argo 固定隧道域名，留空使用临时隧道                     |
-| ARGO_AUTH    | 否       | -                                    | Argo 固定隧道密钥                                       |
-| CFIP         | 否       | www.visa.com.tw                      | 节点优选域名或 IP                                       |
-| CFPORT       | 否       | 443                                  | 节点端口                                                |
-| NAME         | 否       | (空)                                 | 节点名称前缀                                            |
-| FILE_PATH    | 否       | ./tmp                                | 运行目录                                                |
-| SUB_PATH     | 否       | sub                                  | 订阅路径                                                |
-| CHAT_ID      | 否       | (空)                                 | 推送节点的 chat id（需与 BOT_TOKEN 同时填写）           |
-| BOT_TOKEN    | 否       | (空)                                 | 推送节点的 bot token                                    |
-| SHOW_LOG     | 否       | true                                 | 是否显示日志，`no/false/disable` 屏蔽，`true/yes` 显示  |
-
----
-
 ## ☁️ 部署到 Unikraft Cloud
 
 ### 1. 前置：注册与获取 API Token（Unikraft Key）
@@ -56,7 +30,7 @@
 1. 打开 [console.unikraft.cloud](https://console.unikraft.cloud) 注册 / 登录
 2. 进入 **API Tokens**（或 Settings → Tokens）页面
 3. **生成一个新的 API Token**（复制保存，只显示一次）
-4. 记下你的**组织名（Organization）**—— 通常是你注册的用户名，形如 `sk684437`
+
 
 ### 2. 配置 GitHub Actions Secrets
 
@@ -83,6 +57,34 @@
 | `env_vars`      | 否   | (空)                | 环境变量，**用分号 `;` 分隔**：`KEY1=VALUE1;KEY2=VALUE2`            |
 
 > ⚠️ **env_vars 请用分号 `;` 分隔**（GitHub 输入框的换行不可靠，实测只有第一行生效）。
+
+
+## 📋 环境变量
+
+| 变量名       | 是否必须 | 默认值                               | 说明                                                    |
+| ------------ | -------- | ------------------------------------ | ------------------------------------------------------- |
+| UPLOAD_URL   | 否       | -                                    | 订阅上传地址                                            |
+| PROJECT_URL  | 否       | https://www.google.com               | 项目分配的域名                                          |
+| AUTO_ACCESS  | 否       | false                                | 是否开启自动访问保活                                    |
+| PORT         | 否       | 3000                                 | HTTP 服务监听端口                                       |
+| ARGO_PORT    | 否       | 8001                                 | Argo 隧道端口                                           |
+| UUID         | 否       | 9afd1229-b893-40c1-84dd-51e7ce204913 | 节点 UUID                                               |
+| NEZHA_SERVER | 否       | -                                    | 哪吒面板域名                                            |
+| NEZHA_PORT   | 否       | -                                    | 哪吒端口（443/8443/2096/2087/2083/2053 时自动启用 TLS） |
+| NEZHA_KEY    | 否       | -                                    | 哪吒密钥                                                |
+| ARGO_DOMAIN  | 否       | -                                    | Argo 固定隧道域名，留空使用临时隧道                     |
+| ARGO_AUTH    | 否       | -                                    | Argo 固定隧道密钥                                       |
+| CFIP         | 否       | www.visa.com.tw                      | 节点优选域名或 IP                                       |
+| CFPORT       | 否       | 443                                  | 节点端口                                                |
+| NAME         | 否       | (空)                                 | 节点名称前缀                                            |
+| FILE_PATH    | 否       | ./tmp                                | 运行目录                                                |
+| SUB_PATH     | 否       | sub                                  | 订阅路径                                                |
+| CHAT_ID      | 否       | (空)                                 | 推送节点的 chat id（需与 BOT_TOKEN 同时填写）           |
+| BOT_TOKEN    | 否       | (空)                                 | 推送节点的 bot token                                    |
+| SHOW_LOG     | 否       | true                                 | 是否显示日志，`no/false/disable` 屏蔽，`true/yes` 显示  |
+
+---
+
 
 **工作流做了什么：**
 
