@@ -4,54 +4,77 @@ on:
   workflow_dispatch:
     inputs:
       metro:
-        description: 实例所在区域 (metro)
+        description: 部署地区
         required: true
         type: choice
-        default: fra
+        default: fra - 法兰克福 (Frankfurt, DE)
         options:
-          - fra
-          - sin
-          - sfo
-          - dal
-          - was
-      instance_name:
-        description: 要删除的实例名称（留空则列出当前所有实例）
+          - dal - 达拉斯 (Dallas, US)
+          - fra - 法兰克福 (Frankfurt, DE)
+          - sfo - 旧金山 (San Francisco, US)
+          - sin - 新加坡 (Singapore)
+          - was - 华盛顿 (Washington DC, US)
+      instance:
+        description: 实例名称或 UUID
         required: false
         type: string
-        default: nodejs
 
 jobs:
   delete:
-    name: Delete instance
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Install Unikraft CLI
-        uses: unikraft/setup-action@v1
+        run: |
+          set -euo pipefail
 
-      - name: Login to Unikraft Cloud (UNIKRAFT_TOKEN)
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates curl
+          sudo install -d -m 0755 /etc/apt/keyrings
+          sudo curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
+            -o /etc/apt/keyrings/unikraft-cli.gpg \
+            https://pkg.unikraft.com/debian/cli-apt/keys/cli-apt.gpg
+          sudo tee /etc/apt/sources.list.d/unikraft-cli.sources >/dev/null <<EOF
+          Types: deb
+          URIs: https://pkg.unikraft.com/debian/cli-apt/
+          Suites: $(. /etc/os-release && echo "$VERSION_CODENAME")
+          Components: stable
+          Signed-By: /etc/apt/keyrings/unikraft-cli.gpg
+          EOF
+          sudo apt-get update
+          sudo apt-get install -y unikraft-cli
+          unikraft version
+
+      - name: Login to Unikraft Cloud
         env:
           UNIKRAFT_TOKEN: ${{ secrets.UNIKRAFT_TOKEN }}
-        run: |
-          printf '%s' "$UNIKRAFT_TOKEN" > "$RUNNER_TEMP/uk.token"
-          unikraft login --token "$RUNNER_TEMP/uk.token"
-          rm -f "$RUNNER_TEMP/uk.token"
-
-      - name: List current instances
-        run: |
-          unikraft instances list --metro "${{ inputs.metro }}"
+        run: echo "$UNIKRAFT_TOKEN" | unikraft login --token -
 
       - name: Delete instance
         env:
           METRO: ${{ inputs.metro }}
-          INSTANCE: ${{ inputs.instance_name }}
+          INSTANCE: ${{ inputs.instance }}
         run: |
           set -euo pipefail
-          # 删除指定实例（按 区域/名称 定位，避免跨区域误删）
-          unikraft instance delete "$METRO/$INSTANCE"
+          METRO_CODE="${METRO%% *}"
+
+          echo "Listing instances in metro: ${METRO_CODE}"
+          unikraft instances list --filter "metro==${METRO_CODE}" -o table || true
+          echo ""
+
+          if [[ -z "${INSTANCE}" ]]; then
+            echo "instance is required." >&2
+            echo "Fill the instance name/UUID." >&2
+            exit 1
+          fi
+
+          echo "Deleting instance: ${INSTANCE}"
+          unikraft instances delete "${INSTANCE}"
+          {
+            echo "### 删除完成"
+            echo ""
+            echo "- **地区**: \`${METRO_CODE}\`"
+            echo "- **实例**: \`${INSTANCE}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
